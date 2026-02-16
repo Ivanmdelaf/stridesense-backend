@@ -96,3 +96,65 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+
+# Resumen del Proyecto
+
+## Estructura creada (20 archivos)
+
+### 🛡️ Auth Module — Login JWT + Perfil de usuario
+
+- **user.entity.ts** — Entidad `User`  
+  **Campos:** `id`, `name`, `email`, `password`, `role`, `avatarUrl`
+- **jwt.strategy.ts** — Estrategia JWT con Bearer token
+- **jwt-auth.guard.ts** — Guard para rutas protegidas
+- **current-user.decorator.ts** — Decorador `@CurrentUser()`
+- **auth.service.ts**
+  - Login con bcrypt  
+  - `getProfile()`  
+  - `updateProfile()`
+- **auth.controller.ts**
+  - `POST /api/auth/login`
+  - `GET /api/auth/me`
+  - `PATCH /api/auth/me`
+
+---
+
+### 🏃 Sessions Module — CRUD de sesiones de entrenamiento
+
+- **session.entity.ts** — Entidad `Session`  
+  **Campos:** `date`, `sport`, `duration`, `distance`, `notes`
+- **sessions.service.ts** — CRUD con scope por usuario
+- **sessions.controller.ts**
+  - `GET /api/sessions`
+  - `POST /api/sessions`
+  - `GET /api/sessions/:id`
+  - `DELETE /api/sessions/:id`
+
+---
+
+### ⚠️ Risk Module — Análisis de riesgo basado en sesiones
+
+- **risk.service.ts** — Calcula 4 factores:
+  - frecuencia  
+  - carga  
+  - variedad  
+  - descanso
+- **risk.controller.ts** — `GET /api/risk/summary`
+
+---
+
+### 🌱 Seed
+
+- **seed.ts** — Inserta 2 usuarios + 15 sesiones de prueba
+
+---
+
+## 🚀 Cómo arrancar el proyecto
+
+1. Asegúrate de tener **PostgreSQL** corriendo y una DB llamada **`stridesense`**
+2. Revisa la configuración del archivo **.env**  
+   (host, port, user, password)
+3. Arranca el servidor en modo desarrollo:
+   ```bash
+   npm run start:dev
