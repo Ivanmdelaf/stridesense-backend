@@ -11,17 +11,17 @@ describe('AuthService', () => {
   let service: AuthService;
 
   const mockUserRepo = {
-    findOne: jest.fn(),
-    create: jest.fn(),
-    save: jest.fn(),
+    findOne: vi.fn(),
+    create: vi.fn(),
+    save: vi.fn(),
   };
 
   const mockJwtService = {
-    sign: jest.fn().mockReturnValue('mock-token'),
+    sign: vi.fn().mockReturnValue('mock-token'),
   };
 
   const mockConfigService = {
-    get: jest.fn().mockReturnValue(3600),
+    get: vi.fn().mockReturnValue(3600),
   };
 
   beforeEach(async () => {
@@ -35,7 +35,7 @@ describe('AuthService', () => {
     }).compile();
 
     service = module.get<AuthService>(AuthService);
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('register', () => {
