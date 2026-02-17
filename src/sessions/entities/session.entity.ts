@@ -27,6 +27,12 @@ export class Session {
   @Column({ name: 'distance_km', type: 'float', nullable: true })
   distanceKm: number | null;
 
+  @Column({ name: 'avg_heart_rate', type: 'int', nullable: true })
+  avgHeartRate: number | null;
+
+  @Column({ name: 'cadence_spm', type: 'int', nullable: true })
+  cadenceSpm: number | null;
+
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 

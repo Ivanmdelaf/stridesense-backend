@@ -65,12 +65,22 @@ async function seed() {
     const durationMinutes = 20 + Math.floor(Math.random() * 80); // 20-100 min
 
     let distanceKm: number | null = null;
+    let avgHeartRate: number | null = null;
+    let cadenceSpm: number | null = null;
+
     if (sport === 'running') {
       distanceKm = parseFloat((3 + Math.random() * 12).toFixed(1));
+      avgHeartRate = 130 + Math.floor(Math.random() * 50); // 130-180
+      cadenceSpm = 155 + Math.floor(Math.random() * 35);   // 155-190
     } else if (sport === 'cycling') {
       distanceKm = parseFloat((10 + Math.random() * 40).toFixed(1));
+      avgHeartRate = 120 + Math.floor(Math.random() * 40); // 120-160
+      cadenceSpm = 70 + Math.floor(Math.random() * 30);    // 70-100 rpm
     } else if (sport === 'swimming') {
       distanceKm = parseFloat((0.5 + Math.random() * 2.5).toFixed(1));
+      avgHeartRate = 125 + Math.floor(Math.random() * 45); // 125-170
+    } else if (sport === 'strength') {
+      avgHeartRate = 110 + Math.floor(Math.random() * 40); // 110-150
     }
 
     const notes = [
@@ -87,6 +97,8 @@ async function seed() {
       durationMinutes,
       sport,
       distanceKm,
+      avgHeartRate,
+      cadenceSpm,
       notes: notes[Math.floor(Math.random() * notes.length)],
       userId: athlete.id,
     });

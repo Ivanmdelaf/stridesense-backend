@@ -36,6 +36,18 @@ export class CreateSessionDto {
   @Min(0)
   distanceKm?: number;
 
+  @ApiPropertyOptional({ example: 155 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  avgHeartRate?: number;
+
+  @ApiPropertyOptional({ example: 170 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  cadenceSpm?: number;
+
   @ApiPropertyOptional({ example: 'Easy morning run' })
   @IsOptional()
   @IsString()
