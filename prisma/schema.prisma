@@ -1,11 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../generated/prisma"
 }
 
@@ -13,3 +7,54 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum Role {
+  athlete
+  coach
+  admin
+}
+
+enum Sport {
+  running
+  cycling
+  swimming
+  strength
+  other
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model User {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  email     String    @unique
+  password  String
+  role      Role      @default(athlete)
+  avatarUrl String?   @map("avatar_url")
+  sessions  Session[]
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Session {
+  id              String   @id @default(uuid()) @db.Uuid
+  date            DateTime @db.Date
+  durationMinutes Int      @map("duration_minutes")
+  sport           Sport
+  distanceKm      Float?   @map("distance_km")
+  avgHeartRate    Int?     @map("avg_heart_rate")
+  cadenceSpm      Int?     @map("cadence_spm")
+  notes           String?
+  userId          String   @map("user_id") @db.Uuid
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+

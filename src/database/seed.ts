@@ -1,68 +1,46 @@
-import { DataSource } from 'typeorm';
+import 'dotenv/config';
 import * as bcrypt from 'bcrypt';
-import { User } from '../auth/entities/user.entity';
-import { Session } from '../sessions/entities/session.entity';
-import { config } from 'dotenv';
+import { PrismaClient } from '../../generated/prisma';
 
-config();
-
-const AppDataSource = new DataSource({
-  type: 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432', 10),
-  username: process.env.DB_USERNAME || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres',
-  database: process.env.DB_NAME || 'stridesense',
-  entities: [User, Session],
-  synchronize: true,
-});
+const prisma = new PrismaClient();
 
 async function seed() {
-  await AppDataSource.initialize();
-  console.log('Database connected.');
+  console.log('Cleaning existing data...');
+  await prisma.session.deleteMany();
+  await prisma.user.deleteMany();
 
-  const userRepo = AppDataSource.getRepository(User);
-  const sessionRepo = AppDataSource.getRepository(Session);
-
-  // Clean existing data
-  await sessionRepo.delete({});
-  await userRepo.delete({});
-
-  // Create users
+  console.log('Creating users...');
   const hashedPassword = await bcrypt.hash('password123', 10);
 
-  const athlete = userRepo.create({
-    name: 'Carlos Martinez',
-    email: 'athlete@stridesense.com',
-    password: hashedPassword,
-    role: 'athlete',
-    avatarUrl: null,
+  const athlete = await prisma.user.create({
+    data: {
+      name: 'Carlos Martinez',
+      email: 'athlete@stridesense.com',
+      password: hashedPassword,
+      role: 'athlete',
+    },
   });
 
-  const coach = userRepo.create({
-    name: 'Laura Garcia',
-    email: 'coach@stridesense.com',
-    password: hashedPassword,
-    role: 'coach',
-    avatarUrl: null,
+  await prisma.user.create({
+    data: {
+      name: 'Laura Garcia',
+      email: 'coach@stridesense.com',
+      password: hashedPassword,
+      role: 'coach',
+    },
   });
 
-  await userRepo.save([athlete, coach]);
-  console.log('Users created.');
-
-  // Create sessions for athlete (last 3 weeks)
+  console.log('Creating sessions for athlete...');
   const sports = ['running', 'cycling', 'swimming', 'strength', 'other'] as const;
   const now = new Date();
-  const sessions: Partial<Session>[] = [];
 
-  for (let i = 0; i < 15; i++) {
-    const daysAgo = Math.floor(Math.random() * 21); // 0-20 days ago
+  const sessionsData = Array.from({ length: 15 }, () => {
+    const daysAgo = Math.floor(Math.random() * 21);
     const date = new Date(now);
     date.setDate(date.getDate() - daysAgo);
-    const dateStr = date.toISOString().split('T')[0];
 
     const sport = sports[Math.floor(Math.random() * sports.length)];
-    const durationMinutes = 20 + Math.floor(Math.random() * 80); // 20-100 min
+    const durationMinutes = 20 + Math.floor(Math.random() * 80);
 
     let distanceKm: number | null = null;
     let avgHeartRate: number | null = null;
@@ -70,20 +48,20 @@ async function seed() {
 
     if (sport === 'running') {
       distanceKm = parseFloat((3 + Math.random() * 12).toFixed(1));
-      avgHeartRate = 130 + Math.floor(Math.random() * 50); // 130-180
-      cadenceSpm = 155 + Math.floor(Math.random() * 35);   // 155-190
+      avgHeartRate = 130 + Math.floor(Math.random() * 50);
+      cadenceSpm = 155 + Math.floor(Math.random() * 35);
     } else if (sport === 'cycling') {
       distanceKm = parseFloat((10 + Math.random() * 40).toFixed(1));
-      avgHeartRate = 120 + Math.floor(Math.random() * 40); // 120-160
-      cadenceSpm = 70 + Math.floor(Math.random() * 30);    // 70-100 rpm
+      avgHeartRate = 120 + Math.floor(Math.random() * 40);
+      cadenceSpm = 70 + Math.floor(Math.random() * 30);
     } else if (sport === 'swimming') {
       distanceKm = parseFloat((0.5 + Math.random() * 2.5).toFixed(1));
-      avgHeartRate = 125 + Math.floor(Math.random() * 45); // 125-170
+      avgHeartRate = 125 + Math.floor(Math.random() * 45);
     } else if (sport === 'strength') {
-      avgHeartRate = 110 + Math.floor(Math.random() * 40); // 110-150
+      avgHeartRate = 110 + Math.floor(Math.random() * 40);
     }
 
-    const notes = [
+    const noteOptions = [
       'Felt great, good pace.',
       'Tough session, pushed hard.',
       'Easy recovery session.',
@@ -92,26 +70,27 @@ async function seed() {
       null,
     ];
 
-    sessions.push({
-      date: dateStr,
+    return {
+      date,
       durationMinutes,
       sport,
       distanceKm,
       avgHeartRate,
       cadenceSpm,
-      notes: notes[Math.floor(Math.random() * notes.length)],
+      notes: noteOptions[Math.floor(Math.random() * noteOptions.length)],
       userId: athlete.id,
-    });
-  }
+    };
+  });
 
-  await sessionRepo.save(sessions.map((s) => sessionRepo.create(s)));
-  console.log(`${sessions.length} sessions created for athlete.`);
+  await prisma.session.createMany({ data: sessionsData });
+  console.log(`${sessionsData.length} sessions created for athlete.`);
 
-  await AppDataSource.destroy();
+  await prisma.$disconnect();
   console.log('Seed completed successfully.');
 }
 
-seed().catch((error) => {
+seed().catch(async (error) => {
   console.error('Seed failed:', error);
+  await prisma.$disconnect();
   process.exit(1);
 });

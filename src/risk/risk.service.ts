@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Session } from '../sessions/entities/session.entity';
+import { PrismaService } from '../prisma/prisma.service';
 
 export type RiskLevel = 'low' | 'medium' | 'high';
 
@@ -19,17 +17,21 @@ export interface RiskSummary {
   generatedAt: string;
 }
 
+type SessionRow = {
+  date: Date;
+  durationMinutes: number;
+  sport: string;
+};
+
 @Injectable()
 export class RiskService {
-  constructor(
-    @InjectRepository(Session)
-    private readonly sessionRepo: Repository<Session>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getSummary(userId: string): Promise<RiskSummary> {
-    const sessions = await this.sessionRepo.find({
+    const sessions = await this.prisma.session.findMany({
       where: { userId },
-      order: { date: 'DESC' },
+      orderBy: { date: 'desc' },
+      select: { date: true, durationMinutes: true, sport: true },
     });
 
     const factors = this.computeFactors(sessions);
@@ -43,19 +45,15 @@ export class RiskService {
     };
   }
 
-  private computeFactors(sessions: Session[]): RiskFactor[] {
+  private computeFactors(sessions: SessionRow[]): RiskFactor[] {
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const fourteenDaysAgo = new Date(
       now.getTime() - 14 * 24 * 60 * 60 * 1000,
     );
 
-    const recentSessions = sessions.filter(
-      (s) => new Date(s.date) >= sevenDaysAgo,
-    );
-    const twoWeekSessions = sessions.filter(
-      (s) => new Date(s.date) >= fourteenDaysAgo,
-    );
+    const recentSessions = sessions.filter((s) => s.date >= sevenDaysAgo);
+    const twoWeekSessions = sessions.filter((s) => s.date >= fourteenDaysAgo);
 
     return [
       this.trainingFrequency(recentSessions),
@@ -65,7 +63,7 @@ export class RiskService {
     ];
   }
 
-  private trainingFrequency(recentSessions: Session[]): RiskFactor {
+  private trainingFrequency(recentSessions: SessionRow[]): RiskFactor {
     const count = recentSessions.length;
     let score: number;
     let label: string;
@@ -89,7 +87,7 @@ export class RiskService {
     };
   }
 
-  private trainingLoad(recentSessions: Session[]): RiskFactor {
+  private trainingLoad(recentSessions: SessionRow[]): RiskFactor {
     if (recentSessions.length === 0) {
       return {
         id: 'training-load',
@@ -125,7 +123,7 @@ export class RiskService {
     };
   }
 
-  private trainingVariety(twoWeekSessions: Session[]): RiskFactor {
+  private trainingVariety(twoWeekSessions: SessionRow[]): RiskFactor {
     const uniqueSports = new Set(twoWeekSessions.map((s) => s.sport));
     const count = uniqueSports.size;
 
@@ -151,7 +149,7 @@ export class RiskService {
     };
   }
 
-  private restPattern(sessions: Session[]): RiskFactor {
+  private restPattern(sessions: SessionRow[]): RiskFactor {
     if (sessions.length === 0) {
       return {
         id: 'rest-pattern',
@@ -162,7 +160,7 @@ export class RiskService {
     }
 
     const dates = sessions
-      .map((s) => new Date(s.date).getTime())
+      .map((s) => s.date.getTime())
       .sort((a, b) => a - b);
 
     const uniqueDates = [...new Set(dates)];
