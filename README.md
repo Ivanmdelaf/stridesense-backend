@@ -158,3 +158,11 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 3. Arranca el servidor en modo desarrollo:
    ```bash
    npm run start:dev
+
+## Utilizaremos SUPABASE para tener la bbdd publicada.
+
+## Empaquetar mi DockerFile
+* Generame un DockerFile para que yo pueda generar imagenes de mi servidor. La idea es que pueda desplegarlo alla donde Docker sea compatible.
+
+* docker build -t stridesense-backend
+* docker run -p 3000:3000 stridesense-backend
