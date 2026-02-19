@@ -166,3 +166,14 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 
 * docker build -t stridesense-backend
 * docker run -p 3000:3000 stridesense-backend
+
+# Postgresql - RENDER.
+* Hostname: dpg-d6bd198boq4c73fiig7g-a
+* Port: 5432
+* Database: postgresql_stridesense
+* Username: postgresql_stridesense_user
+* Password: o77iHswqEBhRbjrElP4oCsy0UDhNlkZ1
+* Internal Database URL: postgresql://postgresql_stridesense_user:o77iHswqEBhRbjrElP4oCsy0UDhNlkZ1@dpg-d6bd198boq4c73fiig7g-a/postgresql_stridesense
+* External Database URL: postgresql://postgresql_stridesense_user:o77iHswqEBhRbjrElP4oCsy0UDhNlkZ1@dpg-d6bd198boq4c73fiig7g-a.oregon-postgres.render.com/postgresql_stridesense
+* PSQL Command: PGPASSWORD=o77iHswqEBhRbjrElP4oCsy0UDhNlkZ1 psql -h dpg-d6bd198boq4c73fiig7g-a.oregon-postgres.render.com -U postgresql_stridesense_user postgresql_stridesense
+
