@@ -177,3 +177,4 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 * External Database URL: postgresql://postgresql_stridesense_user:o77iHswqEBhRbjrElP4oCsy0UDhNlkZ1@dpg-d6bd198boq4c73fiig7g-a.oregon-postgres.render.com/postgresql_stridesense
 * PSQL Command: PGPASSWORD=o77iHswqEBhRbjrElP4oCsy0UDhNlkZ1 psql -h dpg-d6bd198boq4c73fiig7g-a.oregon-postgres.render.com -U postgresql_stridesense_user postgresql_stridesense
 
+* https://stridesense-backend.onrender.com
