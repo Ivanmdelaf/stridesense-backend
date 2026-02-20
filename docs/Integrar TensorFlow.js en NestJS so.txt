@@ -1,0 +1,48 @@
+ Integrar TensorFlow.js en NestJS solo para “inferencia” con un modelo simple ya entrenado
+
+1. Crear un modelo de juguete (pero totalmente legítimo para un TFM)
+***************************************************************************************
+const tf = require('@tensorflow/tfjs-node');
+
+async function trainModel() {
+  const model = tf.sequential();
+  model.add(tf.layers.dense({ units: 1, inputShape: [3], activation: 'sigmoid' }));
+
+  model.compile({ optimizer: 'adam', loss: 'binaryCrossentropy' });
+
+  const xs = tf.tensor2d([
+    [10, 5, 7],   // baja carga - baja prob
+    [80, 10, 5],  // alta carga - alta prob
+    [60, 9, 6],   // media carga - media prob
+    [90, 12, 4]   // carga extrema
+  ]);
+
+  const ys = tf.tensor2d([[0], [1], [0.7], [1]]);
+
+  await model.fit(xs, ys, { epochs: 50 });
+
+  await model.save('file://./modelo-lesiones');
+}
+trainModel();
+***************************************************************************************
+
+2. Cargar el modelo en NestJS
+@Injectable()
+export class InjuryRiskService {
+  private model: tf.GraphModel;
+
+  async onModuleInit() {
+    this.model = await tf.loadLayersModel('file://modelo-lesiones/model.json');
+  }
+
+  async predict(data: number[]) {
+    const tensor = tf.tensor2d([data]);
+    const prediction = this.model.predict(tensor) as tf.Tensor;
+    const value = prediction.dataSync()[0];
+    return value;
+  }
+}
+
+StrideSense ya tiene un RiskService con lógica heurística (scores 0-100 por 4 factores). El objetivo es añadir una capa de inferencia ML usando TensorFlow.js con un modelo simple de pesos hardcodeados, exponiendo el resultado como mlPrediction en la respuesta existente de GET /api/risk/summary, sin crear nuevos endpoints ni cargar archivos externos.
+
+Para probarlo: npm run start:dev y buscar en los logs [MlService] Injury risk model initialized.

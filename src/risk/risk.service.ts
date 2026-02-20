@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { MlService, MlPrediction } from '../ml/ml.service';
 
 export type RiskLevel = 'low' | 'medium' | 'high';
 
@@ -14,6 +15,7 @@ export interface RiskSummary {
   overallScore: number;
   overallLevel: RiskLevel;
   factors: RiskFactor[];
+  mlPrediction: MlPrediction;
   generatedAt: string;
 }
 
@@ -25,7 +27,10 @@ type SessionRow = {
 
 @Injectable()
 export class RiskService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ml: MlService,
+  ) {}
 
   async getSummary(userId: string): Promise<RiskSummary> {
     const sessions = await this.prisma.session.findMany({
@@ -37,10 +42,19 @@ export class RiskService {
     const factors = this.computeFactors(sessions);
     const overallScore = this.computeOverallScore(factors);
 
+    // factors order is guaranteed: [0]=frequency, [1]=load, [2]=variety, [3]=rest
+    const mlPrediction = this.ml.predict(
+      factors[0].score,
+      factors[1].score,
+      factors[2].score,
+      factors[3].score,
+    );
+
     return {
       overallScore,
       overallLevel: this.scoreToLevel(overallScore),
       factors,
+      mlPrediction,
       generatedAt: new Date().toISOString(),
     };
   }
