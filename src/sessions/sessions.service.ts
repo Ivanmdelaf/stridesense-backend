@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSessionDto } from './dto/create-session.dto';
+import { UpdateSessionDto } from './dto/update-session.dto';
 
 @Injectable()
 export class SessionsService {
@@ -26,6 +27,22 @@ export class SessionsService {
   async create(userId: string, dto: CreateSessionDto) {
     return this.prisma.session.create({
       data: { ...dto, date: new Date(dto.date), userId },
+    });
+  }
+
+  async update(id: string, userId: string, dto: UpdateSessionDto) {
+    const session = await this.prisma.session.findFirst({
+      where: { id, userId },
+    });
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+    return this.prisma.session.update({
+      where: { id },
+      data: {
+        ...dto,
+        ...(dto.date ? { date: new Date(dto.date) } : {}),
+      },
     });
   }
 
