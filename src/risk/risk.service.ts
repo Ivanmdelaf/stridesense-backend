@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { MlService, MlPrediction } from '../ml/ml.service';
+import { MlService, MlPrediction, MlFeatures } from '../ml/ml.service';
 
 export type RiskLevel = 'low' | 'medium' | 'high';
 
@@ -42,13 +42,8 @@ export class RiskService {
     const factors = this.computeFactors(sessions);
     const overallScore = this.computeOverallScore(factors);
 
-    // factors order is guaranteed: [0]=frequency, [1]=load, [2]=variety, [3]=rest
-    const mlPrediction = this.ml.predict(
-      factors[0].score,
-      factors[1].score,
-      factors[2].score,
-      factors[3].score,
-    );
+    const mlFeatures = this.extractMlFeatures(sessions);
+    const mlPrediction = this.ml.predict(mlFeatures);
 
     return {
       overallScore,
@@ -57,6 +52,85 @@ export class RiskService {
       mlPrediction,
       generatedAt: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Extracts the 5 raw session metrics used directly by the TensorFlow model.
+   * These reflect the athlete's actual training pattern, not pre-computed scores.
+   */
+  private extractMlFeatures(sessions: SessionRow[]): MlFeatures {
+    const now = new Date();
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    const recentSessions = sessions.filter((s) => s.date >= sevenDaysAgo);
+    const prevWeekSessions = sessions.filter(
+      (s) => s.date >= fourteenDaysAgo && s.date < sevenDaysAgo,
+    );
+
+    // Number of sessions in the last 7 days
+    const sessionsPerWeek = recentSessions.length;
+
+    // Average session duration in the last 7 days
+    const avgDurationMinutes =
+      recentSessions.length > 0
+        ? recentSessions.reduce((sum, s) => sum + s.durationMinutes, 0) /
+          recentSessions.length
+        : 0;
+
+    // Unique sports practised in the last 14 days
+    const allRecent = [...recentSessions, ...prevWeekSessions];
+    const uniqueSports = new Set(allRecent.map((s) => s.sport)).size;
+
+    // Maximum consecutive training days (across all sessions)
+    const maxConsecutiveDays = this.computeMaxConsecutive(sessions);
+
+    // Acute:chronic load ratio — this week's minutes vs last week's minutes
+    const thisWeekMinutes = recentSessions.reduce(
+      (sum, s) => sum + s.durationMinutes,
+      0,
+    );
+    const lastWeekMinutes = prevWeekSessions.reduce(
+      (sum, s) => sum + s.durationMinutes,
+      0,
+    );
+    // +1 avoids division by zero; ratio > 1 means load increased this week
+    const loadRatio = thisWeekMinutes / (lastWeekMinutes + 1);
+
+    return {
+      sessionsPerWeek,
+      avgDurationMinutes,
+      uniqueSports,
+      maxConsecutiveDays,
+      loadRatio,
+    };
+  }
+
+  /** Returns the longest streak of consecutive calendar days with at least one session. */
+  private computeMaxConsecutive(sessions: SessionRow[]): number {
+    if (sessions.length === 0) return 0;
+
+    // Collect unique training days (milliseconds at midnight UTC)
+    const dayMs = 24 * 60 * 60 * 1000;
+    const uniqueDays = [
+      ...new Set(
+        sessions.map((s) => Math.floor(s.date.getTime() / dayMs) * dayMs),
+      ),
+    ].sort((a, b) => a - b);
+
+    let maxStreak = 1;
+    let currentStreak = 1;
+
+    for (let i = 1; i < uniqueDays.length; i++) {
+      if (uniqueDays[i] - uniqueDays[i - 1] === dayMs) {
+        currentStreak++;
+        maxStreak = Math.max(maxStreak, currentStreak);
+      } else {
+        currentStreak = 1;
+      }
+    }
+
+    return maxStreak;
   }
 
   private computeFactors(sessions: SessionRow[]): RiskFactor[] {
@@ -173,23 +247,7 @@ export class RiskService {
       };
     }
 
-    const dates = sessions
-      .map((s) => s.date.getTime())
-      .sort((a, b) => a - b);
-
-    const uniqueDates = [...new Set(dates)];
-    let maxConsecutive = 1;
-    let currentStreak = 1;
-    const oneDay = 24 * 60 * 60 * 1000;
-
-    for (let i = 1; i < uniqueDates.length; i++) {
-      if (uniqueDates[i] - uniqueDates[i - 1] <= oneDay) {
-        currentStreak++;
-        maxConsecutive = Math.max(maxConsecutive, currentStreak);
-      } else {
-        currentStreak = 1;
-      }
-    }
+    const maxConsecutive = this.computeMaxConsecutive(sessions);
 
     let score: number;
     let label: string;
