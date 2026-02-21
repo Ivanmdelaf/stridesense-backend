@@ -20,7 +20,7 @@ COPY package*.json ./
 RUN npm ci --omit=dev --legacy-peer-deps
 
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/generated ./dist/generated
+COPY --from=build /app/src/generated ./dist/src/generated
 COPY --from=build /app/prisma ./prisma
 
 EXPOSE 3000

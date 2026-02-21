@@ -158,7 +158,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "C:\\Users\\imartinez\\Desktop\\Solutions\\strideSense\\stridesense-backend\\src\\generated\\prisma",
+      "value": "/Users/ivanmartinezdelafuente/Desktop/Stridesense/stridesense-backend/src/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -167,16 +167,16 @@ const config = {
     "binaryTargets": [
       {
         "fromEnvVar": null,
-        "value": "windows",
+        "value": "darwin-arm64",
         "native": true
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "C:\\Users\\imartinez\\Desktop\\Solutions\\strideSense\\stridesense-backend\\prisma\\schema.prisma",
+    "sourceFilePath": "/Users/ivanmartinezdelafuente/Desktop/Stridesense/stridesense-backend/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
-    "rootEnvPath": "../../../.env",
+    "rootEnvPath": null,
     "schemaEnvPath": "../../../.env"
   },
   "relativePath": "../../../prisma",
