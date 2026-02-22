@@ -39,6 +39,16 @@ export class RiskService {
       select: { date: true, durationMinutes: true, sport: true },
     });
 
+    if (sessions.length === 0) {
+      return {
+        overallScore: 0,
+        overallLevel: 'low',
+        factors: [],
+        mlPrediction: { score: 0, level: 'low' },
+        generatedAt: new Date().toISOString(),
+      };
+    }
+
     const factors = this.computeFactors(sessions);
     const overallScore = this.computeOverallScore(factors);
 
@@ -158,13 +168,13 @@ export class RiskService {
 
     if (count <= 1) {
       score = 80;
-      label = 'Insufficient training frequency';
+      label = 'Frecuencia de entrenamiento insuficiente';
     } else if (count <= 4) {
       score = 20;
-      label = 'Good training frequency';
+      label = 'Frecuencia de entrenamiento adecuada';
     } else {
       score = 55;
-      label = 'Possible overtraining frequency';
+      label = 'Posible sobreentrenamiento por frecuencia';
     }
 
     return {
@@ -176,15 +186,6 @@ export class RiskService {
   }
 
   private trainingLoad(recentSessions: SessionRow[]): RiskFactor {
-    if (recentSessions.length === 0) {
-      return {
-        id: 'training-load',
-        label: 'No recent training data',
-        score: 70,
-        level: 'high',
-      };
-    }
-
     const avgDuration =
       recentSessions.reduce((sum, s) => sum + s.durationMinutes, 0) /
       recentSessions.length;
@@ -194,13 +195,13 @@ export class RiskService {
 
     if (avgDuration < 20) {
       score = 70;
-      label = 'Low training volume';
+      label = 'Volumen de entrenamiento bajo';
     } else if (avgDuration <= 90) {
       score = 15;
-      label = 'Balanced training volume';
+      label = 'Volumen de entrenamiento equilibrado';
     } else {
       score = 50;
-      label = 'High volume strain';
+      label = 'Volumen de entrenamiento elevado';
     }
 
     return {
@@ -218,15 +219,12 @@ export class RiskService {
     let score: number;
     let label: string;
 
-    if (count === 0) {
+    if (count <= 1) {
       score = 45;
-      label = 'No training variety data';
-    } else if (count === 1) {
-      score = 45;
-      label = 'Limited cross-training';
+      label = 'Variedad de entrenamiento limitada';
     } else {
       score = 10;
-      label = 'Good training variety';
+      label = 'Buena variedad de entrenamiento';
     }
 
     return {
@@ -238,15 +236,6 @@ export class RiskService {
   }
 
   private restPattern(sessions: SessionRow[]): RiskFactor {
-    if (sessions.length === 0) {
-      return {
-        id: 'rest-pattern',
-        label: 'No training data for rest analysis',
-        score: 40,
-        level: 'medium',
-      };
-    }
-
     const maxConsecutive = this.computeMaxConsecutive(sessions);
 
     let score: number;
@@ -254,13 +243,13 @@ export class RiskService {
 
     if (maxConsecutive >= 5) {
       score = 75;
-      label = 'Insufficient rest between sessions';
+      label = 'Descanso insuficiente entre sesiones';
     } else if (maxConsecutive >= 3) {
       score = 40;
-      label = 'Moderate rest pattern';
+      label = 'Patrón de descanso moderado';
     } else {
       score = 10;
-      label = 'Good rest pattern';
+      label = 'Buen patrón de descanso';
     }
 
     return {
