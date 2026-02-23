@@ -13,6 +13,6 @@ services:
       - key: JWT_EXPIRATION
         value: 1d
       - key: CORS_ORIGIN
-        sync: false
+        value: https://stridesense-frontend.onrender.com
       - key: PORT
         value: 3000
